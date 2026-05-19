@@ -19,29 +19,15 @@ async function getCharacter(id: string): Promise<Character> {
 
 // SSG: genera rutas estáticas para todos los personajes
 export async function generateStaticParams() {
-  const allIds: { id: string }[] = [];
-
-
-  // La API tiene 42 páginas actualmente
-  for (let page = 1; page <= 42; page++) {
-    const res = await fetch(
-      `https://rickandmortyapi.com/api/character?page=${page}`
-    );
-
-    if (!res.ok) continue;
-
-    const data: RickAndMortyListResponse = await res.json();
-
-    data.results.forEach((character) => {
-      allIds.push({
-        id: String(character.id),
-      });
-    });
-  }
-
-
-  return allIds;
+  // Solo pre-generamos los primeros 20 para no agotar el build
+  const res = await fetch(
+    "https://rickandmortyapi.com/api/character?page=1"
+  );
+  if (!res.ok) return [];
+  const data: RickAndMortyListResponse = await res.json();
+  return data.results.map((c) => ({ id: String(c.id) }));
 }
+
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;

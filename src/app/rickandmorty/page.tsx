@@ -6,13 +6,12 @@ async function getCharacters() {
   const res = await fetch(
     "https://rickandmortyapi.com/api/character?page=1"
   );
-
   if (!res.ok) throw new Error("Error al cargar personajes");
-
   const data: RickAndMortyListResponse = await res.json();
   return data.results;
 }
 
+// ← esto te faltaba
 const statusColor: Record<string, string> = {
   Alive: "bg-green-500",
   Dead: "bg-red-500",
