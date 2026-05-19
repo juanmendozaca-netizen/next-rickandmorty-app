@@ -4,33 +4,36 @@ import { RickAndMortyListResponse } from "../../types/rickandmorty";
 
 // SSG: forzamos caché permanente para pre-renderizar en build
 async function getCharacters() {
-  const firstRes = await fetch(
-    "https://rickandmortyapi.com/api/character?page=1"
-  );
+  try {
+    // Obtenemos la primera página para saber el total
+    const firstRes = await fetch(
+      "https://rickandmortyapi.com/api/character?page=1",
+      { cache: "no-store" }
+    );
 
-  if (!firstRes.ok) throw new Error("Error al cargar personajes");
+    if (!firstRes.ok) throw new Error("Error al cargar personajes");
 
-  const firstData: RickAndMortyListResponse = await firstRes.json();
-  const totalPages = firstData.info.pages;
+    const firstData: RickAndMortyListResponse = await firstRes.json();
+    const totalPages = firstData.info.pages;
+    const allCharacters = [...firstData.results];
 
-  const pageNumbers = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
-
-  const responses = await Promise.all(
-    pageNumbers.map(async (page) => {
+    // Fetch secuencial para no saturar en Vercel
+    for (let page = 2; page <= totalPages; page++) {
       const res = await fetch(
-        `https://rickandmortyapi.com/api/character?page=${page}`
+        `https://rickandmortyapi.com/api/character?page=${page}`,
+        { cache: "no-store" }
       );
-      if (!res.ok) return { results: [] }; // si falla una página, la ignora
-      return res.json() as Promise<RickAndMortyListResponse>;
-    })
-  );
+      if (!res.ok) continue; // si falla una página, sigue con la siguiente
+      const data: RickAndMortyListResponse = await res.json();
+      allCharacters.push(...data.results);
+    }
 
-  return [
-    ...firstData.results,
-    ...responses.flatMap((data) => data.results),
-  ];
+    return allCharacters;
+
+  } catch {
+    throw new Error("Error al cargar personajes");
+  }
 }
-
 
 
 
